@@ -54,3 +54,35 @@ crashlytics-build.properties
 
 # Never ignore .meta files — they link your assets together
 !**/*.meta
+
+# Asset packs
+CaptainCatSparrow/
+CaptainCatSparrow.meta
+Low Poly Fire Particles.*
+Low Poly Fire Particles/
+LowPolyMedievalPropsLite.*
+LowPolyMedievalPropsLite/
+Nature - Essentials.*
+Nature - Essentials/
+RemyMats.*
+RemyMats/
+HANDOFF.*
+Tavern Interior By I.We.D.*
+Tavern Interior By I.We.D/
+YughuesFreeFlooringMaterials.*
+YughuesFreeFlooringMaterials/
+
+# Animations
+Breathing Idle(2).*
+Breathing Idle.*
+Dismissing Gesture.*
+Hard Head Nod(1).*
+IDontKnow.*
+Laughing(1).*
+Pointing(1).*
+TalkingLong.*
+TalkingShort.*
+Thinking.*
+Waving(1).*
+
+Resources.*
