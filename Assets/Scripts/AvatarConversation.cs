@@ -64,6 +64,10 @@ public class AvatarConversation : MonoBehaviour
     public float trackInterval = 3.5f;
     [Tooltip("Add 180 if your model ends up facing away from the player when it turns.")]
     public float yawOffset = 0f;
+    [Tooltip("Seconds of idle time after Bram finishes before subtitles auto-clear. 0 = never.")]
+    public float subtitleClearDelay = 20f;
+
+    Coroutine clearCaptionsRoutine;   // handle so a pending clear can be cancelled
 
     public enum FacingMode { Off, FaceOnceWhenResponding, TrackWhileResponding }
 
@@ -75,7 +79,7 @@ public class AvatarConversation : MonoBehaviour
     public XRNode recordHand = XRNode.RightHand;
 
     [Header("Recording")]
-    public int maxRecordSeconds = 10;
+    public int maxRecordSeconds = 15;
     public int sampleRate = 16000;
 
     [Header("Animator state names")]
@@ -140,6 +144,7 @@ public class AvatarConversation : MonoBehaviour
         recordClip = Microphone.Start(null, false, maxRecordSeconds, sampleRate);
         SetState(State.Recording);
         // Clear last turn's subtitles so stale text doesn't linger during the new turn.
+        StopPendingCaptionClear();
         SetCaption(userCaption, "", "");
         SetCaption(avatarCaption, "", "");
         Debug.Log("[Avatar] Recording...");
@@ -173,7 +178,7 @@ public class AvatarConversation : MonoBehaviour
         req.uploadHandler = new UploadHandlerRaw(wav);
         req.uploadHandler.contentType = "audio/wav";
         req.downloadHandler = new DownloadHandlerBuffer();
-        req.timeout = 30;
+        req.timeout = 60;
 
         // try/finally guarantees we always return to Idle, even on error,
         // so the avatar can always take another prompt.
@@ -209,6 +214,11 @@ public class AvatarConversation : MonoBehaviour
             SetState(State.Idle);
             PlayAnimation(idleState);
             Debug.Log("[Avatar] Idle (ready for next prompt).");
+
+            // Begin the idle countdown to auto-clear subtitles (cancel any prior one first).
+            StopPendingCaptionClear();
+            if (subtitleClearDelay > 0f)
+                clearCaptionsRoutine = StartCoroutine(ClearCaptionsAfterDelay());
         }
     }
 
@@ -242,6 +252,25 @@ public class AvatarConversation : MonoBehaviour
     {
         if (field != null)
             field.text = string.IsNullOrEmpty(text) ? "" : prefix + text;
+    }
+
+    // Cancels any pending auto-clear so it can't fire in the middle of a new turn.
+    void StopPendingCaptionClear()
+    {
+        if (clearCaptionsRoutine != null)
+        {
+            StopCoroutine(clearCaptionsRoutine);
+            clearCaptionsRoutine = null;
+        }
+    }
+
+    // Waits a quiet delay, then clears both captions. Cancelled if a new turn starts.
+    IEnumerator ClearCaptionsAfterDelay()
+    {
+        yield return new WaitForSeconds(subtitleClearDelay);
+        SetCaption(userCaption, "", "");
+        SetCaption(avatarCaption, "", "");
+        clearCaptionsRoutine = null;
     }
 
     // Single choke point for state transitions so visual cues always stay in sync.
